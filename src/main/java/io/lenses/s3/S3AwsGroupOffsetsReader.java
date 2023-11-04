@@ -67,6 +67,9 @@ public class S3AwsGroupOffsetsReader implements AwsGroupOffsetsReader {
       final ListObjectsV2Response response = iterator.next();
       for (S3Object s3Object : response.contents()) {
         String key = s3Object.key();
+        if (!isValidKey(key)) {
+          continue;
+        }
         System.out.println("\tkey:" + key);
         final ResponseBytes<GetObjectResponse> objResponse =
             s3Client.getObjectAsBytes(
@@ -103,26 +106,38 @@ public class S3AwsGroupOffsetsReader implements AwsGroupOffsetsReader {
 
   /**
    * Extracts the group, topic and partition from the S3 key. The S3 key is structured as
-   * ${group}/${topic}/${partition}
+   * ../${group}/${topic}/${partition}
    *
    * @param key the S3 key
    * @return a tuple of group and topic partition
    */
   public static Tuple2<String, TopicPartition> extractGroupTopicPartition(String key) {
     final String[] parts = key.split("/");
-    if (parts.length != 3) {
+    // if parts is not at least 3, then the key is not valid
+    if (parts.length < 3) {
       throw new IllegalArgumentException("Invalid S3 key:" + key);
     }
     final String group = parts[parts.length - 3];
     final String topic = parts[parts.length - 2];
-    // if the partition is not an int throw an illegal argument exception that the key format is not
-    // valid
     try {
       final int partition = Integer.parseInt(parts[parts.length - 1]);
-      final TopicPartition topicPartition = new TopicPartition(topic, partition);
-      return new Tuple2<>(group, topicPartition);
+      return new Tuple2<>(group, new TopicPartition(topic, partition));
     } catch (NumberFormatException e) {
-      throw new IllegalArgumentException("Invalid S3 key:" + key);
+      throw new IllegalArgumentException("Invalid S3 key:" + key, e);
+    }
+  }
+
+  private static boolean isValidKey(String s3Key) {
+    final String[] parts = s3Key.split("/");
+    // if parts is not at least 3, then the key is not valid
+    if (parts.length < 3) {
+      return false;
+    }
+    try {
+      final int partition = Integer.parseInt(parts[parts.length - 1]);
+      return true;
+    } catch (NumberFormatException e) {
+      return false;
     }
   }
 }

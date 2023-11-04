@@ -83,7 +83,8 @@ public class App {
         }
       }
     } catch (Exception e) {
-      System.err.println("An error occurred. " + e);
+      System.err.println("An error occurred. ");
+      e.printStackTrace();
       System.exit(1);
     }
   }
