@@ -10,7 +10,6 @@
  */
 package io.lenses.kafka;
 
-import java.util.List;
 import java.util.Map;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -22,7 +21,6 @@ public class GroupOffsets {
   public GroupOffsets(String group, Map<TopicPartition, OffsetAndMetadata> offsets) {
     if (group == null) throw new IllegalArgumentException("Group cannot be null");
     if (offsets == null) throw new IllegalArgumentException("Offsets cannot be null");
-    if (offsets.isEmpty()) throw new IllegalArgumentException("Offsets cannot be empty");
     this.group = group;
     this.offsets = offsets;
   }
@@ -33,24 +31,5 @@ public class GroupOffsets {
 
   public Map<TopicPartition, OffsetAndMetadata> getOffsets() {
     return offsets;
-  }
-
-  public static void consoleOutput(List<GroupOffsets> offsets) {
-    offsets.forEach(
-        offset -> {
-          System.out.println("Restoring Group:" + offset.getGroup());
-          offset
-              .getOffsets()
-              .forEach(
-                  (topicPartition, offsetAndMetadata) -> {
-                    System.out.println(
-                        "Topic:"
-                            + topicPartition.topic()
-                            + " Partition:"
-                            + topicPartition.partition()
-                            + " Offset:"
-                            + offsetAndMetadata.offset());
-                  });
-        });
   }
 }

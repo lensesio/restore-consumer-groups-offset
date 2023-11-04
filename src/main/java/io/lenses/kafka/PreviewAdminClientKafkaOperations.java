@@ -30,7 +30,7 @@ public class PreviewAdminClientKafkaOperations implements KafkaOperations {
               .forEach(
                   (topicPartition, offsetAndMetadata) -> {
                     System.out.println(
-                        "Topic:"
+                        "\tTopic:"
                             + topicPartition.topic()
                             + " Partition:"
                             + topicPartition.partition()

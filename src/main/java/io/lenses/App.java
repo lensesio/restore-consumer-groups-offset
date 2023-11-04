@@ -76,7 +76,6 @@ public class App {
             final AwsGroupOffsetsReader s3Operations = new S3AwsGroupOffsetsReader(s3Client);
             final List<GroupOffsets> offsets =
                 s3Operations.read(configuration.getSource(), configuration.getGroups());
-            GroupOffsets.consoleOutput(offsets);
             System.out.println("Restoring Groups offsets");
             kafkaOperations.restoreGroupOffsets(offsets, 1, TimeUnit.MINUTES);
             System.out.println("Finished restoring Groups offsets");

@@ -61,11 +61,12 @@ public class S3AwsGroupOffsetsReader implements AwsGroupOffsetsReader {
     ListObjectsV2Iterable iterable = s3Client.listObjectsV2Paginator(request);
     final Iterator<ListObjectsV2Response> iterator = iterable.iterator();
     final Map<String, GroupOffsets> offsetsMap = new HashMap<>();
+    System.out.println("Reading offsets from S3...");
     while (iterator.hasNext()) {
       final ListObjectsV2Response response = iterator.next();
       for (S3Object s3Object : response.contents()) {
         String key = s3Object.key();
-        System.out.println("Reading offsets for key:" + key);
+        System.out.println("\tkey:" + key);
         final ResponseBytes<GetObjectResponse> objResponse =
             s3Client.getObjectAsBytes(
                 GetObjectRequest.builder().bucket(source.getBucket()).key(key).build());

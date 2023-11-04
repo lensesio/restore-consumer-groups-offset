@@ -55,14 +55,13 @@ public class AdminClientKafkaOperations implements KafkaOperations {
         offsets.stream()
             .map(
                 offset -> {
+                  System.out.println("Restoring Group:" + offset.getGroup());
                   offset
                       .getOffsets()
                       .forEach(
                           (topicPartition, offsetAndMetadata) -> {
                             System.out.println(
-                                "Restoring Group:"
-                                    + offset.getGroup()
-                                    + " Topic:"
+                                "\tTopic:"
                                     + topicPartition.topic()
                                     + " Partition:"
                                     + topicPartition.partition()
