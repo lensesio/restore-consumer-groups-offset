@@ -24,6 +24,8 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
 
 /**
@@ -44,8 +46,10 @@ import software.amazon.awssdk.services.s3.S3Client;
  * </ul>
  */
 public class App {
+  private static final Logger logger = LoggerFactory.getLogger(App.class);
+
   public static void main(String[] args) {
-    Ascii.display("/ascii.txt", System.out::println);
+    Ascii.display("/ascii.txt", logger::info);
     final Either<Arguments.Errors, Arguments> either = Arguments.from(args);
     if (either.isLeft()) {
       final Arguments.Errors error = either.getLeft();
@@ -69,22 +73,21 @@ public class App {
               ? new PreviewAdminClientKafkaOperations()
               : AdminClientKafkaOperations.create(configuration.getKafkaProperties())) {
         if (!kafkaOperations.checkConnection(10, TimeUnit.SECONDS)) {
-          System.err.println("Failed to connect to Kafka cluster.");
+          logger.error("Failed to connect to Kafka cluster.");
         } else {
           final S3Config s3Config = configuration.getS3Config();
           try (S3Client s3Client = S3ClientBuilderHelper.build(s3Config)) {
             final AwsGroupOffsetsReader s3Operations = new S3AwsGroupOffsetsReader(s3Client);
             final List<GroupOffsets> offsets =
                 s3Operations.read(configuration.getSource(), configuration.getGroups());
-            System.out.println("Restoring Groups offsets");
+            logger.info("Restoring Groups offsets");
             kafkaOperations.restoreGroupOffsets(offsets, 1, TimeUnit.MINUTES);
-            System.out.println("Finished restoring Groups offsets");
+            logger.info("Finished restoring Groups offsets");
           }
         }
       }
     } catch (Exception e) {
-      System.err.println("An error occurred. ");
-      e.printStackTrace();
+      logger.error("An error occurred. ", e);
       System.exit(1);
     }
   }

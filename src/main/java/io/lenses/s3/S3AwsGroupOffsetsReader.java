@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Optional;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -40,6 +42,7 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
  * and partitions and read the offsets.
  */
 public class S3AwsGroupOffsetsReader implements AwsGroupOffsetsReader {
+  private static final Logger logger = LoggerFactory.getLogger(S3AwsGroupOffsetsReader.class);
   private final S3Client s3Client;
 
   public S3AwsGroupOffsetsReader(S3Client s3Client) {
@@ -48,7 +51,7 @@ public class S3AwsGroupOffsetsReader implements AwsGroupOffsetsReader {
 
   @Override
   public List<GroupOffsets> read(S3Location source, Optional<String[]> groups) {
-    System.out.println(
+    logger.info(
         "Reading Consumer Group offsets from bucket:"
             + source.getBucket()
             + " prefix:"
@@ -62,7 +65,7 @@ public class S3AwsGroupOffsetsReader implements AwsGroupOffsetsReader {
     ListObjectsV2Iterable iterable = s3Client.listObjectsV2Paginator(request);
     final Iterator<ListObjectsV2Response> iterator = iterable.iterator();
     final Map<String, GroupOffsets> offsetsMap = new HashMap<>();
-    System.out.println("Reading offsets from S3...");
+    logger.info("Reading offsets from S3...");
     while (iterator.hasNext()) {
       final ListObjectsV2Response response = iterator.next();
       for (S3Object s3Object : response.contents()) {
@@ -70,7 +73,7 @@ public class S3AwsGroupOffsetsReader implements AwsGroupOffsetsReader {
         if (!isValidKey(key)) {
           continue;
         }
-        System.out.println("\tkey:" + key);
+        logger.info("\tkey:" + key);
         final ResponseBytes<GetObjectResponse> objResponse =
             s3Client.getObjectAsBytes(
                 GetObjectRequest.builder().bucket(source.getBucket()).key(key).build());
@@ -97,7 +100,7 @@ public class S3AwsGroupOffsetsReader implements AwsGroupOffsetsReader {
     }
     final List<GroupOffsets> groupsOffsets = new ArrayList<>(offsetsMap.values());
     groupsOffsets.sort(Comparator.comparing(GroupOffsets::getGroup));
-    System.out.println(
+    logger.info(
         "Finished reading Consumer Groups offsets S3 data. Found "
             + groupsOffsets.size()
             + " groups.");
@@ -134,7 +137,7 @@ public class S3AwsGroupOffsetsReader implements AwsGroupOffsetsReader {
       return false;
     }
     try {
-      final int partition = Integer.parseInt(parts[parts.length - 1]);
+      Integer.parseInt(parts[parts.length - 1]);
       return true;
     } catch (NumberFormatException e) {
       return false;

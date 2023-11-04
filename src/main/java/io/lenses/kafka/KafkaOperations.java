@@ -14,22 +14,25 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public interface KafkaOperations extends AutoCloseable {
+  static final Logger logger = LoggerFactory.getLogger(KafkaOperations.class);
 
   boolean checkConnection(long timeout, TimeUnit unit);
 
   void restoreGroupOffsets(List<GroupOffsets> offsets, long timeout, TimeUnit unit);
 
   default void print(GroupOffsets offset) {
-    System.out.println("Restoring Group:" + offset.getGroup());
+    logger.info("Restoring Group:" + offset.getGroup());
     offset
         .getSortedOffset()
         .forEach(
             entry -> {
               TopicPartition topicPartition = entry.getKey();
               OffsetAndMetadata offsetAndMetadata = entry.getValue();
-              System.out.println(
+              logger.info(
                   "\tTopic:"
                       + topicPartition.topic()
                       + " Partition:"
