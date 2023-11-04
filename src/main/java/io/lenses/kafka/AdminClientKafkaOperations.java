@@ -55,19 +55,7 @@ public class AdminClientKafkaOperations implements KafkaOperations {
         offsets.stream()
             .map(
                 offset -> {
-                  System.out.println("Restoring Group:" + offset.getGroup());
-                  offset
-                      .getOffsets()
-                      .forEach(
-                          (topicPartition, offsetAndMetadata) -> {
-                            System.out.println(
-                                "\tTopic:"
-                                    + topicPartition.topic()
-                                    + " Partition:"
-                                    + topicPartition.partition()
-                                    + " Offset:"
-                                    + offsetAndMetadata.offset());
-                          });
+                  print(offset);
                   AlterConsumerGroupOffsetsResult result =
                       admin.alterConsumerGroupOffsets(offset.getGroup(), offset.getOffsets());
                   return new Tuple2<>(offset, result);

@@ -22,22 +22,7 @@ public class PreviewAdminClientKafkaOperations implements KafkaOperations {
 
   @Override
   public void restoreGroupOffsets(List<GroupOffsets> offsets, long timeout, TimeUnit unit) {
-    offsets.forEach(
-        offset -> {
-          System.out.println("Restoring Group:" + offset.getGroup());
-          offset
-              .getOffsets()
-              .forEach(
-                  (topicPartition, offsetAndMetadata) -> {
-                    System.out.println(
-                        "\tTopic:"
-                            + topicPartition.topic()
-                            + " Partition:"
-                            + topicPartition.partition()
-                            + " Offset:"
-                            + offsetAndMetadata.offset());
-                  });
-        });
+    offsets.forEach(this::print);
   }
 
   @Override

@@ -10,6 +10,8 @@
  */
 package io.lenses.kafka;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -31,5 +33,28 @@ public class GroupOffsets {
 
   public Map<TopicPartition, OffsetAndMetadata> getOffsets() {
     return offsets;
+  }
+
+  public List<Map.Entry<TopicPartition, OffsetAndMetadata>> getSortedOffset() {
+    List<Map.Entry<TopicPartition, OffsetAndMetadata>> sortedOffsets =
+        new java.util.ArrayList<>(offsets.entrySet());
+    sortedOffsets.sort(new CustomComparator());
+    return sortedOffsets;
+  }
+
+  private static class CustomComparator
+      implements Comparator<Map.Entry<TopicPartition, OffsetAndMetadata>> {
+    @Override
+    public int compare(
+        Map.Entry<TopicPartition, OffsetAndMetadata> left,
+        Map.Entry<TopicPartition, OffsetAndMetadata> right) {
+      int topicComparison = left.getKey().topic().compareTo(right.getKey().topic());
+      if (topicComparison != 0) {
+        return topicComparison;
+      } else {
+
+        return Integer.compare(left.getKey().partition(), right.getKey().partition());
+      }
+    }
   }
 }

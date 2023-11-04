@@ -12,10 +12,30 @@ package io.lenses.kafka;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
 
 public interface KafkaOperations extends AutoCloseable {
 
   boolean checkConnection(long timeout, TimeUnit unit);
 
   void restoreGroupOffsets(List<GroupOffsets> offsets, long timeout, TimeUnit unit);
+
+  default void print(GroupOffsets offset) {
+    System.out.println("Restoring Group:" + offset.getGroup());
+    offset
+        .getSortedOffset()
+        .forEach(
+            entry -> {
+              TopicPartition topicPartition = entry.getKey();
+              OffsetAndMetadata offsetAndMetadata = entry.getValue();
+              System.out.println(
+                  "\tTopic:"
+                      + topicPartition.topic()
+                      + " Partition:"
+                      + topicPartition.partition()
+                      + " Offset:"
+                      + offsetAndMetadata.offset());
+            });
+  }
 }
