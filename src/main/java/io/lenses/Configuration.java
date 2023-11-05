@@ -72,7 +72,10 @@ public class Configuration {
     if (!sourceConfig.hasPath("bucket"))
       throw new IllegalArgumentException("S3 bucket is required");
     final String bucket = sourceConfig.getString("bucket");
-    final Optional<String> prefix = Optional.ofNullable(sourceConfig.getString("prefix"));
+    final Optional<String> prefix =
+        sourceConfig.hasPath("prefix")
+            ? Optional.ofNullable(sourceConfig.getString("prefix"))
+            : Optional.empty();
     final S3Location source = new S3Location(bucket, prefix);
 
     // groups are optional, when define it's a comma separated list

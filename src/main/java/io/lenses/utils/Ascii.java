@@ -16,9 +16,12 @@ import io.lenses.App;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Ascii {
   // java function one argument returns void
+  private static final Logger logger = LoggerFactory.getLogger(Ascii.class);
 
   public static void display(String resourceName, Consumer<String> func) {
     if (resourceName == null || resourceName.isEmpty()) {
@@ -29,7 +32,7 @@ public class Ascii {
         func.accept(readAll(inputStream));
       }
     } catch (IOException e) {
-      System.err.println("Failed to read the ascii.txt resource.");
+      logger.warn("Failed to read the ascii.txt resource.", e);
     }
   }
 }

@@ -37,7 +37,10 @@
         <aws.version>2.21.13</aws.version>
         <hocon.version>1.4.2</hocon.version>
         <kafka.version>3.5.0</kafka.version>
+        <log.version>2.20.0</log.version>
+        <logback.version>1.2.6</logback.version>
         <mockito.version>3.12.4</mockito.version>
+        <junit.version>5.10.0</junit.version>
         <headerFile>${project.basedir}/checkstyle/java.header</headerFile>
     </properties>
 
@@ -68,11 +71,27 @@
             <version>${hocon.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${log.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>RELEASE</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
@@ -119,14 +138,6 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.3.0</version>
                 <configuration>
-                   <!-- <archive>
-                        <manifest>
-                            <addClasspath>true</addClasspath>
-                            <classpathPrefix>lib</classpathPrefix>
-                            <mainClass>io.lenses.App</mainClass>
-                        </manifest>
-                    </archive>-->
-
                     <archive>
                         <manifest>
                             <mainClass>io.lenses.App</mainClass>
@@ -158,7 +169,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.19.1</version>
+                <version>3.1.2</version>
                 <configuration>
                     <forkCount>1</forkCount>
                     <reuseForks>false</reuseForks>

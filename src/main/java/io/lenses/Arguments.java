@@ -37,7 +37,7 @@ public class Arguments {
     for (int i = 0; i < args.length; i++) {
       if (args[i].equals("--config") && i + 1 < args.length) {
         configFilePath = args[i + 1];
-        i++; // Skip the next argument, which is the file path
+        i++;
       } else if (args[i].equals("--preview")) {
         isPreview = true;
       }

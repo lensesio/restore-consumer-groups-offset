@@ -11,6 +11,7 @@
 package io.lenses.s3;
 
 import io.lenses.kafka.GroupOffsets;
+import io.lenses.utils.Tuple2;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -21,6 +22,8 @@ import java.util.Map;
 import java.util.Optional;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -39,6 +42,7 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
  * and partitions and read the offsets.
  */
 public class S3AwsGroupOffsetsReader implements AwsGroupOffsetsReader {
+  private static final Logger logger = LoggerFactory.getLogger(S3AwsGroupOffsetsReader.class);
   private final S3Client s3Client;
 
   public S3AwsGroupOffsetsReader(S3Client s3Client) {
@@ -47,7 +51,7 @@ public class S3AwsGroupOffsetsReader implements AwsGroupOffsetsReader {
 
   @Override
   public List<GroupOffsets> read(S3Location source, Optional<String[]> groups) {
-    System.out.println(
+    logger.info(
         "Reading Consumer Group offsets from bucket:"
             + source.getBucket()
             + " prefix:"
@@ -61,20 +65,21 @@ public class S3AwsGroupOffsetsReader implements AwsGroupOffsetsReader {
     ListObjectsV2Iterable iterable = s3Client.listObjectsV2Paginator(request);
     final Iterator<ListObjectsV2Response> iterator = iterable.iterator();
     final Map<String, GroupOffsets> offsetsMap = new HashMap<>();
+    logger.info("Reading offsets from S3...");
     while (iterator.hasNext()) {
       final ListObjectsV2Response response = iterator.next();
       for (S3Object s3Object : response.contents()) {
         String key = s3Object.key();
-        System.out.println("Reading offsets for key:" + key);
+        if (!isValidKey(key)) {
+          continue;
+        }
+        logger.info("\tkey:" + key);
         final ResponseBytes<GetObjectResponse> objResponse =
             s3Client.getObjectAsBytes(
                 GetObjectRequest.builder().bucket(source.getBucket()).key(key).build());
         final long offset = objResponse.asByteBuffer().getLong();
-        final String[] parts = key.split("/");
-        final String group = parts[parts.length - 3];
-        final String topic = parts[parts.length - 2];
-        final int partition = Integer.parseInt(parts[parts.length - 1]);
-        final TopicPartition topicPartition = new TopicPartition(topic, partition);
+        final Tuple2<String, TopicPartition> groupTopicPartition = extractGroupTopicPartition(key);
+        final String group = groupTopicPartition._1();
         final OffsetAndMetadata offsetAndMetadata = new OffsetAndMetadata(offset);
         if (groups.isPresent()) {
           final String[] groupsArray = groups.get();
@@ -83,22 +88,59 @@ public class S3AwsGroupOffsetsReader implements AwsGroupOffsetsReader {
             offsetsMap
                 .computeIfAbsent(group, k -> new GroupOffsets(group, new HashMap<>()))
                 .getOffsets()
-                .put(topicPartition, offsetAndMetadata);
+                .put(groupTopicPartition._2(), offsetAndMetadata);
           }
         } else {
           offsetsMap
               .computeIfAbsent(group, k -> new GroupOffsets(group, new HashMap<>()))
               .getOffsets()
-              .put(topicPartition, offsetAndMetadata);
+              .put(groupTopicPartition._2(), offsetAndMetadata);
         }
       }
     }
     final List<GroupOffsets> groupsOffsets = new ArrayList<>(offsetsMap.values());
     groupsOffsets.sort(Comparator.comparing(GroupOffsets::getGroup));
-    System.out.println(
+    logger.info(
         "Finished reading Consumer Groups offsets S3 data. Found "
             + groupsOffsets.size()
             + " groups.");
     return groupsOffsets;
+  }
+
+  /**
+   * Extracts the group, topic and partition from the S3 key. The S3 key is structured as
+   * ../${group}/${topic}/${partition}
+   *
+   * @param key the S3 key
+   * @return a tuple of group and topic partition
+   */
+  public static Tuple2<String, TopicPartition> extractGroupTopicPartition(String key) {
+    final String[] parts = key.split("/");
+    // if parts is not at least 3, then the key is not valid
+    if (parts.length < 3) {
+      throw new IllegalArgumentException("Invalid S3 key:" + key);
+    }
+    final String group = parts[parts.length - 3];
+    final String topic = parts[parts.length - 2];
+    try {
+      final int partition = Integer.parseInt(parts[parts.length - 1]);
+      return new Tuple2<>(group, new TopicPartition(topic, partition));
+    } catch (NumberFormatException e) {
+      throw new IllegalArgumentException("Invalid S3 key:" + key, e);
+    }
+  }
+
+  private static boolean isValidKey(String s3Key) {
+    final String[] parts = s3Key.split("/");
+    // if parts is not at least 3, then the key is not valid
+    if (parts.length < 3) {
+      return false;
+    }
+    try {
+      Integer.parseInt(parts[parts.length - 1]);
+      return true;
+    } catch (NumberFormatException e) {
+      return false;
+    }
   }
 }

@@ -18,34 +18,6 @@ import org.junit.jupiter.api.Test;
 
 class ConfigurationTest {
 
-  // code to test
-  /* public static Configuration from(InputStream inputStream) {
-      //read the input stream as HOCON and return the configuration
-      final Config config = ConfigFactory.parseReader(new InputStreamReader(inputStream));
-      //read all kafka properties
-      final HashMap<String, String> kafkaProperties = new HashMap<>();
-      if (!config.hasPath("kafka")) throw new IllegalArgumentException("Kafka properties are required");
-      config.getConfig("kafka").entrySet().forEach(e -> kafkaProperties.put(e.getKey(), e.getValue().unwrapped().toString()));
-
-      //read the source
-      if (!config.hasPath("aws")) throw new IllegalArgumentException("S3 source is required");
-      final Config sourceConfig = config.getConfig("aws");
-      if (!sourceConfig.hasPath("bucket")) throw new IllegalArgumentException("S3 bucket is required");
-      final String bucket = sourceConfig.getString("bucket");
-      final Optional<String> prefix = Optional.ofNullable(sourceConfig.getString("prefix"));
-      final S3Location source = new S3Location(bucket, prefix);
-
-      final Optional<String[]> groups = Optional.of(config.getString("groups").split(","));
-
-      //read AwsMode
-      final AwsMode awsMode = AwsMode.valueOf(config.getString("aws.mode").toUpperCase());
-      final String awsRegion = config.getString("aws.region");
-      //if credentials mode, read the access and secret keys
-      final Optional<String> awsAccessKey = awsMode == AwsMode.CREDENTIALS ? Optional.of(config.getString("aws.access.key")) : Optional.empty();
-      final Optional<String> awsSecretKey = awsMode == AwsMode.CREDENTIALS ? Optional.of(config.getString("aws.secret.key")) : Optional.empty();
-
-      return new Configuration(source, groups, awsMode, awsRegion, awsAccessKey, awsSecretKey, kafkaProperties);
-  } */
   @Test
   void createAnInstanceOfConfigurationFromTheHoconConfiguration() {
     // create the Hocon configuration as string; use flatten keys
@@ -62,8 +34,6 @@ class ConfigurationTest {
             + "aws.access.key=access-key\n"
             + "aws.secret.key=secret-key\n";
 
-    // println hocon
-    System.out.println(hocon);
     final Configuration configuration =
         Configuration.from(new ByteArrayInputStream(hocon.getBytes()));
     assertNotNull(configuration);
@@ -72,7 +42,40 @@ class ConfigurationTest {
     assertEquals("group1", configuration.getGroups().get()[0]);
     assertEquals("group2", configuration.getGroups().get()[1]);
     assertEquals(AwsMode.CREDENTIALS, configuration.getS3Config().getAwsMode());
-    assertEquals("eu-west-1", configuration.getS3Config().getAwsRegion());
+    assertEquals("eu-west-1", configuration.getS3Config().getAwsRegion().get());
+    assertEquals("access-key", configuration.getS3Config().getAwsAccessKey().get());
+    assertEquals("secret-key", configuration.getS3Config().getAwsSecretKey().get());
+    assertEquals("localhost:9092", configuration.getKafkaProperties().get("bootstrap.servers"));
+    assertEquals("PLAINTEXT", configuration.getKafkaProperties().get("security.protocol"));
+    assertEquals("PLAIN", configuration.getKafkaProperties().get("sasl.mechanism"));
+    assertEquals(
+        "org.apache.kafka.common.security.plain.PlainLoginModule required username=admin password=admin-secret;",
+        configuration.getKafkaProperties().get("sasl.jaas.config"));
+  }
+
+  @Test
+  void handlePrefixNotBeingSet() {
+    final String hocon =
+        "kafka.bootstrap.servers=\"localhost:9092\"\n"
+            + "kafka.security.protocol=PLAINTEXT\n"
+            + "kafka.sasl.mechanism=PLAIN\n"
+            + "kafka.sasl.jaas.config=\"org.apache.kafka.common.security.plain.PlainLoginModule required username=\"admin\" password=\"admin-secret\";\"\n"
+            + "aws.bucket=io.lenses\n"
+            + "groups=\"group1,group2\"\n"
+            + "aws.mode=credentials\n"
+            + "aws.region=eu-west-1\n"
+            + "aws.access.key=access-key\n"
+            + "aws.secret.key=secret-key\n";
+
+    final Configuration configuration =
+        Configuration.from(new ByteArrayInputStream(hocon.getBytes()));
+    assertNotNull(configuration);
+    assertEquals("io.lenses", configuration.getSource().getBucket());
+    assertFalse(configuration.getSource().getPrefix().isPresent());
+    assertEquals("group1", configuration.getGroups().get()[0]);
+    assertEquals("group2", configuration.getGroups().get()[1]);
+    assertEquals(AwsMode.CREDENTIALS, configuration.getS3Config().getAwsMode());
+    assertEquals("eu-west-1", configuration.getS3Config().getAwsRegion().get());
     assertEquals("access-key", configuration.getS3Config().getAwsAccessKey().get());
     assertEquals("secret-key", configuration.getS3Config().getAwsSecretKey().get());
     assertEquals("localhost:9092", configuration.getKafkaProperties().get("bootstrap.servers"));
@@ -106,7 +109,7 @@ class ConfigurationTest {
     assertEquals("group1", configuration.getGroups().get()[0]);
     assertEquals("group2", configuration.getGroups().get()[1]);
     assertEquals(AwsMode.DEFAULT, configuration.getS3Config().getAwsMode());
-    assertEquals("eu-west-1", configuration.getS3Config().getAwsRegion());
+    assertEquals("eu-west-1", configuration.getS3Config().getAwsRegion().get());
     assertFalse(configuration.getS3Config().getAwsAccessKey().isPresent());
     assertFalse(configuration.getS3Config().getAwsSecretKey().isPresent());
     assertEquals("localhost:9092", configuration.getKafkaProperties().get("bootstrap.servers"));
@@ -138,7 +141,7 @@ class ConfigurationTest {
     assertEquals("group-offsets", configuration.getSource().getPrefix().get());
     assertFalse(configuration.getGroups().isPresent());
     assertEquals(AwsMode.DEFAULT, configuration.getS3Config().getAwsMode());
-    assertEquals("eu-west-1", configuration.getS3Config().getAwsRegion());
+    assertEquals("eu-west-1", configuration.getS3Config().getAwsRegion().get());
     assertFalse(configuration.getS3Config().getAwsAccessKey().isPresent());
     assertFalse(configuration.getS3Config().getAwsSecretKey().isPresent());
     assertEquals("localhost:9092", configuration.getKafkaProperties().get("bootstrap.servers"));

@@ -10,6 +10,7 @@
  */
 package io.lenses.kafka;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -22,7 +23,6 @@ public class GroupOffsets {
   public GroupOffsets(String group, Map<TopicPartition, OffsetAndMetadata> offsets) {
     if (group == null) throw new IllegalArgumentException("Group cannot be null");
     if (offsets == null) throw new IllegalArgumentException("Offsets cannot be null");
-    if (offsets.isEmpty()) throw new IllegalArgumentException("Offsets cannot be empty");
     this.group = group;
     this.offsets = offsets;
   }
@@ -35,22 +35,26 @@ public class GroupOffsets {
     return offsets;
   }
 
-  public static void consoleOutput(List<GroupOffsets> offsets) {
-    offsets.forEach(
-        offset -> {
-          System.out.println("Restoring Group:" + offset.getGroup());
-          offset
-              .getOffsets()
-              .forEach(
-                  (topicPartition, offsetAndMetadata) -> {
-                    System.out.println(
-                        "Topic:"
-                            + topicPartition.topic()
-                            + " Partition:"
-                            + topicPartition.partition()
-                            + " Offset:"
-                            + offsetAndMetadata.offset());
-                  });
-        });
+  public List<Map.Entry<TopicPartition, OffsetAndMetadata>> getSortedOffset() {
+    List<Map.Entry<TopicPartition, OffsetAndMetadata>> sortedOffsets =
+        new java.util.ArrayList<>(offsets.entrySet());
+    sortedOffsets.sort(new CustomComparator());
+    return sortedOffsets;
+  }
+
+  private static class CustomComparator
+      implements Comparator<Map.Entry<TopicPartition, OffsetAndMetadata>> {
+    @Override
+    public int compare(
+        Map.Entry<TopicPartition, OffsetAndMetadata> left,
+        Map.Entry<TopicPartition, OffsetAndMetadata> right) {
+      int topicComparison = left.getKey().topic().compareTo(right.getKey().topic());
+      if (topicComparison != 0) {
+        return topicComparison;
+      } else {
+
+        return Integer.compare(left.getKey().partition(), right.getKey().partition());
+      }
+    }
   }
 }
