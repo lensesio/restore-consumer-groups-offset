@@ -29,23 +29,30 @@ The application requires the configuration file. The configuration file in HOCON
 ```hocon
 kafka {
   bootstrap.servers = "localhost:9092"
-  security.protocol = "SSL"
-  # Add other Kafka settings here
+  # Add all the kafka settings required to connect to your target cluster
 }
 
-aws {
-  bucket = "your-s3-bucket"
-  prefix = "optional-prefix"
-}
-
-# Optional: Specify the consumer groups to restore
-groups = "group1,group2"
+# Comma separated list of groups stored in S3 to consider
+#groups=groupa,groupb,groupc 
 
 aws {
-  mode = "credentials" # or "default"
-  access.key = "your-access-key"
-  secret.key = "your-secret-key"
-  region = "your-aws-region"
+  # The name of the S3 bucket where consumer groups offsets are stored.
+  bucket = "replace-me"
+  ## Optional prefix when the data was stored in a bucket and prefix.
+  #prefix = "prefix1/prefix2"
+
+  # The AWS connection mode. It can be "default" or "credentials".
+  # When using "default" the default AWS credentials provider chain is used.
+  # When using "credentials" the access.key and secret.key properties must be set
+  mode = "default"
+  # only used when mode is "credentials"
+  #access.key = "replace-me"
+
+  # only used when mode is "credentials"
+  #secret.key = "replace-me"
+
+  # The AWS region where the S3 bucket is located.
+  region = "eu-west-2"
 }
 ```
 
@@ -67,14 +74,22 @@ aws.region = "your-aws-region"
 
 ## Running the application
 
-It requires at least Java 8 to run.
+It requires at least Java 8 to run. 
+To run the application, download the latest release unpack the archive, locate the bin folder and run the following command:
+
+```bash 
+chmod 777 restore.sh
+
+# update the config file with your settings
+restore.sh --config config.conf
+```
 
 
 
 To format the code run:
 
 ```bash
-  mvn com.coveo:fmt-maven-plugin:format
+mvn com.coveo:fmt-maven-plugin:format
 ```
 
 To add license header, run:

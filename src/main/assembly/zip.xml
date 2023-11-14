@@ -9,19 +9,21 @@
     </formats>
     <fileSets>
         <fileSet>
-            <directory>${project.build.scriptSourceDirectory}</directory>
-            <outputDirectory></outputDirectory>
+            <directory>${project.basedir}</directory>
+            <outputDirectory>/</outputDirectory>
             <includes>
-                <include>startup.*</include>
+                <include>README.md</include>
+                <include>LICENSE</include>
             </includes>
-        </fileSet>
-        <fileSet>
-            <directory>${project.basedir}/conf</directory>
         </fileSet>
     </fileSets>
     <files>
         <file>
             <source>${project.basedir}/restore.sh</source>
+            <outputDirectory>bin</outputDirectory>
+        </file>
+        <file>
+            <source>${project.basedir}/config.conf</source>
             <outputDirectory>bin</outputDirectory>
         </file>
         <file>
